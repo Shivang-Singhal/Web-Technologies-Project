@@ -45,13 +45,12 @@ var menuData = {
 };
 
 var movies = [
-  { id: 1, title: "Pushpa 3",      emoji: "🔥", genre: "Action / Drama",    lang: "Telugu",  cert: "U/A", price: 240, premiumPrice: 340, color: "#fff4e8" },
-  { id: 2, title: "Stree 3",       emoji: "👻", genre: "Horror Comedy",     lang: "Hindi",   cert: "U/A", price: 200, premiumPrice: 300, color: "#f0eeff" },
-  { id: 3, title: "Fighter 2",     emoji: "✈️", genre: "Action Thriller",   lang: "Hindi",   cert: "A",   price: 210, premiumPrice: 310, color: "#e8f4ff" },
-  { id: 4, title: "Kalki 2.0",     emoji: "🤖", genre: "Sci-Fi Epic",       lang: "Telugu",  cert: "U/A", price: 260, premiumPrice: 380, color: "#e8fff0" },
-  { id: 5, title: "Oppenheimer 2", emoji: "💥", genre: "Historical Drama",  lang: "English", cert: "A",   price: 290, premiumPrice: 420, color: "#fff0f4" },
+  { id: 1, title: "Dhurandhar",   image: "images/pushpa3.jpg",   emoji: "🔥", genre: "Action / Drama",    lang: "Telugu",  cert: "U/A", price: 240, premiumPrice: 340, color: "#fff4e8" },
+  { id: 2, title: "Bhool Bhulaiya",    image: "images/pushpa3.jpg",   emoji: "👻", genre: "Horror Comedy",     lang: "Hindi",   cert: "U/A", price: 200, premiumPrice: 300, color: "#f0eeff" },
+  { id: 3, title: "Spider Man - No way home",  image: "images/pushpa3.jpg",   emoji: "✈️", genre: "Action Thriller",   lang: "Hindi",   cert: "A",   price: 210, premiumPrice: 310, color: "#e8f4ff" },
+  { id: 4, title: "Dune 2",  image: "images/dune2.jpg",   emoji: "🤖", genre: "Sci-Fi Epic",       lang: "Telugu",  cert: "U/A", price: 260, premiumPrice: 380, color: "#e8fff0" },
+  { id: 5, title: "The Shawshank Redumption",image: "images/pushpa3.jpg", emoji: "💥", genre: "Historical Drama",  lang: "English", cert: "A",   price: 290, premiumPrice: 420, color: "#fff0f4" },
 ];
-
 var theaters = [
   { id: 1, name: "PVR Ansal Plaza",  address: "Ansal Plaza Mall, Alpha 1, Greater Noida",  features: ["IMAX","Dolby","4K"], emoji: "🎭" },
   { id: 2, name: "Inox Omaxe",       address: "Omaxe Connaught Place, Beta 2, Gr. Noida",  features: ["4K","Standard"],     emoji: "🎬" },
