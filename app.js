@@ -1,7 +1,101 @@
 // Fork & Film — Main JavaScript
 
 // --------------- DATA ---------------
+// app.js
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { 
+  getAuth, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
+// 1. Replace this configuration with your unique config object from Firebase console
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+// 2. Initialize Firebase and Auth services
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+// 3. Grab DOM Elements
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const signupBtn = document.getElementById("signup-btn");
+const loginBtn = document.getElementById("login-btn");
+const logoutBtn = document.getElementById("logout-btn");
+
+const authContainer = document.getElementById("auth-container");
+const dashboardContainer = document.getElementById("dashboard-container");
+const userEmailSpan = document.getElementById("user-email");
+
+// --- Auth Operations ---
+
+// Sign Up
+signupBtn.addEventListener("click", async () => {
+  const email = emailInput.value;
+  const password = passwordInput.value;
+
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    alert(`Success! User created: ${userCredential.user.email}`);
+  } catch (error) {
+    console.error("Signup Error:", error.code, error.message);
+    alert(`Error: ${error.message}`);
+  }
+});
+
+// Log In
+loginBtn.addEventListener("click", async () => {
+  const email = emailInput.value;
+  const password = passwordInput.value;
+
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    alert(`Logged in as: ${userCredential.user.email}`);
+  } catch (error) {
+    console.error("Login Error:", error.code, error.message);
+    alert(`Login Failed: ${error.message}`);
+  }
+});
+
+// Log Out
+logoutBtn.addEventListener("click", async () => {
+  try {
+    await signOut(auth);
+    alert("Logged out successfully!");
+  } catch (error) {
+    console.error("Logout Error:", error.message);
+  }
+});
+
+// 4. Listen for Auth State Changes
+// This is the absolute best way to manage your UI. Firebase automatically
+// detects if a user is logged in (even after refreshing the page).
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    // User is signed in. Show dashboard, hide auth form.
+    authContainer.style.display = "none";
+    dashboardContainer.style.display = "block";
+    userEmailSpan.textContent = user.email;
+    
+    // Clear inputs
+    emailInput.value = "";
+    passwordInput.value = "";
+  } else {
+    // No user is signed in. Show auth form, hide dashboard.
+    authContainer.style.display = "block";
+    dashboardContainer.style.display = "none";
+    userEmailSpan.textContent = "";
+  }
+});
 var restaurants = [
   { id: 1, name: "Spice Garden",    emoji: "🍛", cuisine: "North Indian",  rating: 4.6, time: "35-45 min", type: "both",   tags: ["Biryani","Curry","Naan"],  color: "#fff4e8" },
   { id: 2, name: "Dosa Palace",     emoji: "🫓", cuisine: "South Indian",  rating: 4.4, time: "25-35 min", type: "veg",    tags: ["Dosa","Idli","Coffee"],    color: "#e8fff4" },
