@@ -255,7 +255,24 @@
 
     </div>
   </div>
+<!-- Auth Form -->
+  <div id="auth-container">
+    <h2>Firebase Auth</h2>
+    <input type="email" id="email" placeholder="Email Address" required /><br/><br/>
+    <input type="password" id="password" placeholder="Password (Min 6 chars)" required /><br/><br/>
+    
+    <button id="signup-btn">Sign Up</button>
+    <button id="login-btn">Log In</button>
+  </div>
 
+  <!-- Protected Section (Visible only when logged in) -->
+  <div id="dashboard-container" style="display: none;">
+    <h2>Welcome, <span id="user-email"></span>!</h2>
+    <button id="logout-btn">Log Out</button>
+  </div>
+
+  <!-- Your JavaScript script -->
+  <script type="module" src="app.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
