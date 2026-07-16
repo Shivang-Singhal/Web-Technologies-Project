@@ -803,6 +803,7 @@ async function loadFirestoreCollections() {
 
 // ===== CHANGED SECTION: Advanced User Footprint Tracker (with IP & Geo) =====
 // ===== REINFORCED USER FOOTPRINT TRACKER =====
+// ===== REINFORCED USER FOOTPRINT TRACKER =====
 async function recordUserFootprint(actionType, extraData = {}) {
   // 1. Setup fallback placeholders so we always have a payload to send
   let ipData = {
@@ -902,6 +903,7 @@ async function recordUserFootprint(actionType, extraData = {}) {
   }
 }
 window.recordUserFootprint = recordUserFootprint;
+// ===========================================
 // ===========================================
 // ===================================================================
 
