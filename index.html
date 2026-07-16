@@ -16,6 +16,8 @@
       <button id="nav-home"   class="nav-btn active" onclick="showHome()">Home</button>
       <button id="nav-food"   class="nav-btn"        onclick="openApp('food')">Food</button>
       <button id="nav-movies" class="nav-btn"        onclick="openApp('movies')">Movies</button>
+      <!-- ADD THIS LINE BELOW -->
+    <button id="nav-profile" class="nav-btn"       onclick="showLogin()">👤 Profile</button>
     </div>
 
     <div class="city-tag">📍 Greater Noida</div>
@@ -89,7 +91,44 @@
     </div>
 
   </div>
+<!-- ========== LOGIN / PROFILE PAGE ========== -->
+<div id="login-section" class="hidden">
+  <div class="login-container">
+    
+    <!-- Case A: User is a Guest (Logged Out) -->
+    <div id="auth-logged-out">
+      <h2>👤 Welcome to Fork & Film</h2>
+      <p>Log in or instantly register to manage bookings and track food orders.</p>
+      
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-field">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-input" placeholder="name@example.com" required />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" placeholder="••••••••" required />
+        </div>
+        <!-- Updated text to imply it handles both login and instant signup -->
+        <button type="submit" class="pay-now-btn">Log In / Sign Up</button>
+      </form>
+    </div>
 
+    <!-- Case B: User is Logged In (Profile View) -->
+    <div id="auth-logged-in" class="hidden">
+      <h2>🎉 Account Dashboard</h2>
+      <p>You are successfully authenticated via Firebase securely.</p>
+      
+      <div style="background: #f0f4ff; padding: 16px; border-radius: 8px; margin: 20px 0; border: 1px solid #d0e0ff; text-align: left;">
+        <div style="font-weight: 700; color: #333;">Current Session User:</div>
+        <div id="profile-email-display" style="color: #555; font-family: monospace; margin-top: 4px; word-break: break-all;">loading...</div>
+      </div>
+
+      <button onclick="handleLogout()" class="pay-now-btn" style="background: #ff4d4d;">Log Out</button>
+    </div>
+
+  </div>
+</div>
 
   <!-- ========== APP SECTION ========== -->
   <div id="app-section" class="hidden">
@@ -255,7 +294,8 @@
 
     </div>
   </div>
-<!-- Auth Form -->
 
+<!-- Load your app code as a module so we can import/export Firebase objects -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>
