@@ -118,7 +118,7 @@ var currentShow    = showtimes[0];
 var payMode        = null;
 
 
-// --------------- NAV ---------------
+// --------------- NAVIGATION (FIXED) ---------------
 
 function showHome() {
   document.getElementById("home-section").classList.remove("hidden");
@@ -128,6 +128,15 @@ function showHome() {
 }
 
 function openApp(tab) {
+  // CRITICAL FIX: If user clicks the profile tab, show the login/profile container instead of hiding it!
+  if (tab === "profile") {
+    document.getElementById("home-section").classList.add("hidden");
+    document.getElementById("app-section").classList.add("hidden");
+    document.getElementById('login-section').classList.remove('hidden');
+    setNavActive("profile");
+    return;
+  }
+
   document.getElementById("home-section").classList.add("hidden");
   document.getElementById("app-section").classList.remove("hidden");
   document.getElementById('login-section').classList.add('hidden');
@@ -613,6 +622,7 @@ function formatCard(input) {
   input.value = val.substring(0, 19);
 }
 
+
 // ===== FIREBASE BOOKING SYSTEM =====
 async function submitPayment() {
   var btn = document.querySelector(".pay-now-btn");
@@ -624,11 +634,13 @@ async function submitPayment() {
   try {
     var bookingId = "FF-" + Math.random().toString(36).toUpperCase().slice(2, 10);
     
+    // Safety check for user details
+    var currentUser = auth.currentUser;
     var transactionData = {
       bookingRef: bookingId,
       type: payMode,
-      userId: auth.currentUser ? auth.currentUser.uid : "guest_account",
-      userEmail: auth.currentUser ? auth.currentUser.email : "anonymous",
+      userId: currentUser ? currentUser.uid : "guest_account",
+      userEmail: currentUser ? currentUser.email : "anonymous",
       summary: summaryText,
       timestamp: new Date()
     };
@@ -669,19 +681,24 @@ async function submitPayment() {
 }
 
 
-// ===== FIREBASE AUTH STATE LISTENER =====
-onAuthStateChanged(auth, (user) => {
+// ===== FIREBASE AUTHENTICATION FLOWS (OPTIMIZED) =====
+
+// Dynamic Profile Update UI helper to handle rendering changes safely
+function updateProfileUI(user) {
   var profileBtn = document.getElementById('nav-profile');
   var loggedOutView = document.getElementById('auth-logged-out');
   var loggedInView = document.getElementById('auth-logged-in');
   var emailDisplay = document.getElementById('profile-email-display');
+  var nameDisplay = document.getElementById('profile-name-display');
 
   if (user) {
-    if (profileBtn) profileBtn.innerHTML = `👤 ${user.displayName || user.email.split('@')[0]}`;
+    const nameToUse = user.displayName || user.email.split('@')[0];
+    if (profileBtn) profileBtn.innerHTML = `👤 ${nameToUse}`;
     if (loggedOutView) loggedOutView.classList.add('hidden');
     if (loggedInView) {
       loggedInView.classList.remove('hidden');
       if (emailDisplay) emailDisplay.textContent = user.email;
+      if (nameDisplay) nameDisplay.textContent = nameToUse;
     }
   } else {
     if (profileBtn) profileBtn.innerHTML = "👤 Profile";
@@ -689,7 +706,20 @@ onAuthStateChanged(auth, (user) => {
     if (loggedInView) {
       loggedInView.classList.add('hidden');
       if (emailDisplay) emailDisplay.textContent = "";
+      if (nameDisplay) nameDisplay.textContent = "";
     }
+  }
+}
+
+// Persistent state observer
+onAuthStateChanged(auth, (user) => {
+  updateProfileUI(user);
+  if (user) {
+    console.log("Auth state verified: User is logged in", user.email);
+    // Explicitly record user footprints with fresh state context
+    recordUserFootprint("session_restore", { trigger: "auth_state_changed" });
+  } else {
+    console.log("Auth state verified: No user logged in");
   }
 });
 
@@ -702,15 +732,23 @@ function showLogin() {
   setNavActive("profile");
 }
 
-// ===== FIREBASE REGISTRATION & LOGOUT VALIDATIONS =====
+// Async Sign Up flow resolving profile updates before running tracker
 async function handleSignUp(email, password, fullName) { 
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
+    // Apply the display name directly to Firebase
     await updateProfile(user, {
       displayName: fullName
     });
+
+    // CRITICAL: Reload the user details so the local context has the updated profile metrics!
+    await user.reload();
+    const refreshedUser = auth.currentUser;
+
+    // Force run the UI update instantly
+    updateProfileUI(refreshedUser);
 
     console.log("Successfully registered and saved name:", fullName);
     showToast("Registration successful! Welcome!");
@@ -723,7 +761,8 @@ async function handleSignUp(email, password, fullName) {
 
 async function handleLogin(email, password) {
   try {
-    await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    updateProfileUI(userCredential.user);
     console.log("Logged in successfully!");
     showToast("Logged in successfully!");
     showHome();
@@ -785,8 +824,11 @@ async function loadFirestoreCollections() {
 }
 
 
-// ===== REINFORCED GEOLOCATION USER FOOTPRINT TRACKER =====
+// ===== USER FOOTPRINT TRACKER (FIXED INTENSITY RESOLUTIONS) =====
 async function recordUserFootprint(actionType, extraData = {}) {
+  // Pull context from live currentUser immediately at execution time
+  const currentUser = auth.currentUser;
+
   let ipData = {
     ip: "blocked_or_restricted",
     country: "unknown",
@@ -860,14 +902,15 @@ async function recordUserFootprint(actionType, extraData = {}) {
       arrivalReferrer: document.referrer || "direct_entry",
       sessionHistoryDepth: window.history.length,
       
-      userId: auth.currentUser ? auth.currentUser.uid : "anonymous_visitor",
-      userEmail: auth.currentUser ? auth.currentUser.email : "anonymous",
-      userName: auth.currentUser ? (auth.currentUser.displayName || auth.currentUser.email.split('@')[0]) : "Guest User",
+      // CRITICAL FIX: Pull straight from currentUser reference
+      userId: currentUser ? currentUser.uid : "anonymous_visitor",
+      userEmail: currentUser ? currentUser.email : "anonymous",
+      userName: currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : "Guest User",
       ...extraData
     };
 
     await addDoc(collection(db, "user_footprints"), footprint);
-    console.log("Footprint recorded successfully.");
+    console.log("Footprint recorded successfully for user ID:", footprint.userId);
   } catch (error) {
     console.error("Critical Footprint error: ", error);
   }
