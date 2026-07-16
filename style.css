@@ -1456,3 +1456,43 @@ input, select, textarea {
   .hero-section h1 { font-size: 32px; }
   .nav-links { display: none; }
 }
+/* Login Screen Styles */
+#login-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 70vh;
+  padding: 20px;
+}
+
+.login-container {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.login-container h2 {
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.login-container p {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.login-container .form-field {
+  text-align: left;
+  margin-bottom: 16px;
+}
+
+/* Fallback helper class if not already in your CSS */
+.hidden {
+  display: none !important;
+}
