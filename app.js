@@ -1,5 +1,40 @@
 // Fork & Film — Main JavaScript
 
+// ===== CHANGED SECTION: Firebase Imports & Initialization =====
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  onAuthStateChanged, 
+  signOut 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  getDocs, 
+  query, 
+  where 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// REPLACE THESE PLACEHOLDERS WITH YOUR FIREBASE CONSOLE CONFIG KEYS
+const firebaseConfig = {
+    apiKey: "AIzaSyCzPFub8qvbteH24mZCVc56Xn9HmQMlQP0",
+    authDomain: "trial-48d80.firebaseapp.com",
+    projectId: "trial-48d80",
+    storageBucket: "trial-48d80.firebasestorage.app",
+    messagingSenderId: "210173220561",
+    appId: "1:210173220561:web:dafb9e18d5dfd2c0fc57f0",
+    measurementId: "G-F9DQDFC9J6"
+  };
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+// ===============================================================
+
+
 // --------------- DATA ---------------
 
 var restaurants = [
@@ -13,15 +48,15 @@ var menuData = {
   1: [
     { id: "a1", name: "Butter Chicken",  emoji: "🍛", desc: "Creamy tomato gravy with tender chicken", price: 320, veg: false, taste: ["rich","mild"],   moods: ["comfort","romantic"],      cat: "Main"    },
     { id: "a2", name: "Dal Makhani",     emoji: "🫕", desc: "Slow-cooked black lentils in butter",     price: 240, veg: true,  taste: ["rich","mild"],   moods: ["comfort","relaxed"],       cat: "Main"    },
-    { id: "a3", name: "Paneer Tikka",    emoji: "🧀", desc: "Cottage cheese grilled in tandoor",       price: 260, veg: true,  taste: ["spicy","tangy"], moods: ["adventurous"],             cat: "Starter" },
-    { id: "a4", name: "Chicken Biryani", emoji: "🍚", desc: "Fragrant rice layered with spiced chicken",price: 360, veg: false, taste: ["spicy","rich"],  moods: ["celebration","energetic"], cat: "Biryani" },
+    { id: "a3", name: "Paneer Tikka",    emoji: "🧀", desc: "Cottage cheese grilled in tandoor",        price: 260, veg: true,  taste: ["spicy","tangy"], moods: ["adventurous"],             cat: "Starter" },
+    { id: "a4", name: "Chicken Biryani", emoji: "🍚", desc: "Fragrant rice layered with spiced chicken",price: 360, veg: false, taste: ["spicy","rich"],   moods: ["celebration","energetic"], cat: "Biryani" },
     { id: "a5", name: "Garlic Naan",     emoji: "🫓", desc: "Soft bread with garlic and butter",       price:  60, veg: true,  taste: ["mild"],          moods: ["comfort"],                 cat: "Bread"   },
     { id: "a6", name: "Gulab Jamun",     emoji: "🍮", desc: "Milk balls soaked in rose sugar syrup",   price: 110, veg: true,  taste: ["sweet"],         moods: ["indulgent"],               cat: "Dessert" },
   ],
   2: [
     { id: "b1", name: "Masala Dosa",   emoji: "🫓", desc: "Crispy crepe filled with spiced potato",   price: 170, veg: true, taste: ["spicy","tangy"], moods: ["energetic","healthy"],  cat: "Dosa"    },
     { id: "b2", name: "Idli Sambar",   emoji: "🍙", desc: "Steamed rice cakes with lentil soup",      price: 110, veg: true, taste: ["mild"],          moods: ["healthy","relaxed"],    cat: "Idli"    },
-    { id: "b3", name: "Medu Vada",     emoji: "🍩", desc: "Crispy lentil fritters with chutney",      price: 130, veg: true, taste: ["mild","tangy"],  moods: ["comfort"],              cat: "Vada"    },
+    { id: "b3", name: "Medu Vada",     emoji: "🍩", desc: "Crispy lentil fritters with chutney",      price: 130, veg: true, taste: ["mild","tangy"],  moods: ["comfort"],               cat: "Vada"    },
     { id: "b4", name: "Rava Uttapam",  emoji: "🥞", desc: "Semolina pancake with onion and tomato",   price: 150, veg: true, taste: ["mild"],          moods: ["healthy","comfort"],    cat: "Uttapam" },
     { id: "b5", name: "Filter Coffee", emoji: "☕",  desc: "Strong south Indian drip coffee",          price:  75, veg: true, taste: ["rich"],          moods: ["relaxed","energetic"],  cat: "Drink"   },
     { id: "b6", name: "Payasam",       emoji: "🍮", desc: "Sweet rice pudding with cardamom",         price: 110, veg: true, taste: ["sweet","mild"],  moods: ["indulgent"],            cat: "Dessert" },
@@ -30,7 +65,7 @@ var menuData = {
     { id: "c1", name: "Seekh Kebab",   emoji: "🍢", desc: "Minced meat kebab grilled on charcoal",   price: 340, veg: false, taste: ["spicy","rich"], moods: ["celebration","adventurous"], cat: "Kebab"  },
     { id: "c2", name: "Mutton Biryani",emoji: "🍚", desc: "Dum-cooked mutton with fragrant rice",    price: 420, veg: false, taste: ["spicy","rich"], moods: ["celebration","indulgent"],   cat: "Biryani"},
     { id: "c3", name: "Shahi Paneer",  emoji: "🧀", desc: "Paneer in a cashew-cream gravy",          price: 280, veg: true,  taste: ["rich","mild"],  moods: ["romantic","indulgent"],      cat: "Main"   },
-    { id: "c4", name: "Roomali Roti",  emoji: "🫓", desc: "Paper-thin folded flatbread",             price:  45, veg: true,  taste: ["mild"],         moods: ["comfort"],                   cat: "Bread"  },
+    { id: "c4", name: "Roomali Roti",  emoji: "🫓", desc: "Paper-thin folded flatbread",             price:  45, veg: true,  taste: ["mild"],          moods: ["comfort"],                   cat: "Bread"  },
     { id: "c5", name: "Chicken Korma", emoji: "🍛", desc: "Mild chicken in yogurt and nut gravy",    price: 340, veg: false, taste: ["mild","rich"],  moods: ["romantic","comfort"],         cat: "Main"   },
     { id: "c6", name: "Shahi Tukda",   emoji: "🍞", desc: "Fried bread in thickened milk and saffron",price:150, veg: true,  taste: ["sweet","rich"], moods: ["indulgent"],                  cat: "Dessert"},
   ],
@@ -48,12 +83,13 @@ var movies = [
   { id: 1, title: "Dhurandhar",   image: "images/pushpa3.jpg",   emoji: "🔥", genre: "Action / Drama",    lang: "Telugu",  cert: "U/A", price: 240, premiumPrice: 340, color: "#fff4e8" },
   { id: 2, title: "Bhool Bhulaiya",    image: "images/pushpa3.jpg",   emoji: "👻", genre: "Horror Comedy",     lang: "Hindi",   cert: "U/A", price: 200, premiumPrice: 300, color: "#f0eeff" },
   { id: 3, title: "Spider Man - No way home",  image: "images/pushpa3.jpg",   emoji: "✈️", genre: "Action Thriller",   lang: "Hindi",   cert: "A",   price: 210, premiumPrice: 310, color: "#e8f4ff" },
-  { id: 4, title: "Dune 2",  image: "images/dune2.jpg",   emoji: "🤖", genre: "Sci-Fi Epic",       lang: "Telugu",  cert: "U/A", price: 260, premiumPrice: 380, color: "#e8fff0" },
-  { id: 5, title: "The Shawshank Redumption",image: "images/pushpa3.jpg", emoji: "💥", genre: "Historical Drama",  lang: "English", cert: "A",   price: 290, premiumPrice: 420, color: "#fff0f4" },
+  { id: 4, title: "Dune 2",  image: "dune2", genre: "Sci-Fi Epic",        lang: "Telugu",  cert: "U/A", price: 260, premiumPrice: 380, color: "#e8fff0" },
+  { id: 5, title: "The Shawshank Redumption",image: "images/pushpa3.jpg", emoji: "💥", genre: "Historical Drama",   lang: "English", cert: "A",   price: 290, premiumPrice: 420, color: "#fff0f4" },
 ];
+
 var theaters = [
   { id: 1, name: "PVR Ansal Plaza",  address: "Ansal Plaza Mall, Alpha 1, Greater Noida",  features: ["IMAX","Dolby","4K"], emoji: "🎭" },
-  { id: 2, name: "Inox Omaxe",       address: "Omaxe Connaught Place, Beta 2, Gr. Noida",  features: ["4K","Standard"],     emoji: "🎬" },
+  { id: 2, name: "Inox Omaxe",        address: "Omaxe Connaught Place, Beta 2, Gr. Noida",  features: ["4K","Standard"],     emoji: "🎬" },
   { id: 3, name: "Carnival Cinemas", address: "Gaur City Mall, Greater Noida West",         features: ["Standard","4K"],     emoji: "🎪" },
 ];
 
@@ -87,12 +123,16 @@ var payMode        = null;
 function showHome() {
   document.getElementById("home-section").classList.remove("hidden");
   document.getElementById("app-section").classList.add("hidden");
+  // ===== CHANGED LINE Below =====
+  document.getElementById('login-section').classList.add('hidden');
   setNavActive("home");
 }
 
 function openApp(tab) {
   document.getElementById("home-section").classList.add("hidden");
   document.getElementById("app-section").classList.remove("hidden");
+  // ===== CHANGED LINE Below =====
+  document.getElementById('login-section').classList.add('hidden');
   switchTab(tab);
   setNavActive(tab);
 }
@@ -106,6 +146,9 @@ function setNavActive(tab) {
     document.getElementById("nav-food").classList.add("active");
   } else if (tab === "movies") {
     document.getElementById("nav-movies").classList.add("active");
+  // ===== CHANGED LINE Below =====
+  } else if (tab === "profile") {
+    document.getElementById("nav-profile").classList.add("active");
   }
 }
 
@@ -573,16 +616,44 @@ function formatCard(input) {
   input.value = val.substring(0, 19);
 }
 
-function submitPayment() {
+// ===== CHANGED SECTION: Firebase Dynamic Booking Submissions =====
+async function submitPayment() {
   var btn = document.querySelector(".pay-now-btn");
   btn.textContent = "Processing...";
   btn.disabled = true;
 
-  setTimeout(function() {
+  var orderTotal = 0;
+  var summaryText = document.getElementById("order-summary-content").innerText;
+
+  try {
+    // Generate an order reference key
+    var bookingId = "FF-" + Math.random().toString(36).toUpperCase().slice(2, 10);
+    
+    // Construct database snapshot structural payload
+    var transactionData = {
+      bookingRef: bookingId,
+      type: payMode,
+      userId: auth.currentUser ? auth.currentUser.uid : "guest_account",
+      userEmail: auth.currentUser ? auth.currentUser.email : "anonymous",
+      summary: summaryText,
+      timestamp: new Date()
+    };
+
+    if (payMode === "food") {
+      transactionData.items = cart;
+    } else {
+      transactionData.movieTitle = currentMovie.title;
+      transactionData.theaterName = currentTheater.name;
+      transactionData.showtime = currentShow;
+      transactionData.seatsBooked = selectedSeats;
+    }
+
+    // Push transaction structure up to Firestore 'bookings' collection
+    await addDoc(collection(db, "bookings"), transactionData);
+
+    // Update frontend view states matching the original logic
     document.getElementById("pay-form-section").style.display = "none";
     document.getElementById("success-section").classList.add("visible");
-
-    var bookingId = "FF-" + Math.random().toString(36).toUpperCase().slice(2, 10);
     document.getElementById("booking-ref").textContent = "Booking Ref: " + bookingId;
 
     if (payMode === "food") {
@@ -596,11 +667,98 @@ function submitPayment() {
       selectedSeats = [];
       buildSeatGrid();
     }
-
+  } catch (error) {
+    console.error("Firestore database submission failed: ", error);
+    alert("Transaction processing failed, but your UI context has been kept steady.");
+  } finally {
     btn.textContent = "Pay Now";
     btn.disabled = false;
-  }, 1800);
+  }
 }
+// ===============================================================
+
+// ===== CHANGED SECTION: Firebase Real-time Authentication State Listener =====
+// ===== CHANGED SECTION: Updated Auth State Listener with Profile Toggle =====
+onAuthStateChanged(auth, (user) => {
+  var profileBtn = document.getElementById('nav-profile');
+  var loggedOutView = document.getElementById('auth-logged-out');
+  var loggedInView = document.getElementById('auth-logged-in');
+  var emailDisplay = document.getElementById('profile-email-display');
+
+  if (user) {
+    // 1. Update Navigation text to user handle
+    if (profileBtn) profileBtn.innerHTML = `👤 ${user.email.split('@')[0]}`;
+    
+    // 2. Toggle Account view panels
+    if (loggedOutView) loggedOutView.classList.add('hidden');
+    if (loggedInView) {
+      loggedInView.classList.remove('hidden');
+      if (emailDisplay) emailDisplay.textContent = user.email;
+    }
+  } else {
+    // 1. Reset Navigation text to default
+    if (profileBtn) profileBtn.innerHTML = "👤 Profile";
+    
+    // 2. Reset back to the Login form panel
+    if (loggedOutView) loggedOutView.classList.remove('hidden');
+    if (loggedInView) {
+      loggedInView.classList.add('hidden');
+      if (emailDisplay) emailDisplay.textContent = "";
+    }
+  }
+});
+// ============================================================================
+// ===============================================================
+
+// Function to display the Login Section
+function showLogin() {
+  document.getElementById('home-section').classList.add('hidden');
+  document.getElementById('app-section').classList.add('hidden');
+  document.getElementById('login-section').classList.remove('hidden');
+
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+  // ===== CHANGED LINE Below =====
+  setNavActive("profile");
+}
+
+// ===== CHANGED SECTION: Firebase Dynamic Email/Password Authentication Validation =====
+async function handleLogin(event) {
+  event.preventDefault();
+  var email = event.target.querySelector('input[type="email"]').value;
+  var password = event.target.querySelector('input[type="password"]').value;
+
+  try {
+    var userCredential = await signInWithEmailAndPassword(auth, email, password);
+    showToast(`Welcome ${userCredential.user.email}!`);
+    showHome();
+  } catch (error) {
+    // If user record doesn't exist, try creating a new account instantly (Sign Up Fallback)
+    if (error.code === "auth/user-not-found" || error.code === "auth/invalid-credential") {
+      try {
+        var newCredential = await createUserWithEmailAndPassword(auth, email, password);
+        showToast("New Account Provisioned Successfully!");
+        showHome();
+      } catch (signUpError) {
+        alert("Authentication interface error: " + signUpError.message);
+      }
+    } else {
+      alert("Authentication failed: " + error.message);
+    }
+  }
+}
+// ===== CHANGED SECTION: Logout Handler =====
+async function handleLogout() {
+  try {
+    await signOut(auth);
+    showToast("Logged out successfully!");
+    showHome(); // Send them back to the welcome landing board safely
+  } catch (error) {
+    console.error("Authentication separation failed: ", error);
+    alert("Could not process user log out context safely.");
+  }
+}
+// ===========================================
+// ===============================================================
 
 
 // --------------- TOAST ---------------
@@ -613,12 +771,75 @@ function showToast(msg) {
 }
 
 
+// ===== CHANGED SECTION: Firestore Remote Database Collection Initializers =====
+async function loadFirestoreCollections() {
+  try {
+    // 1. Fetch remote restaurants collection
+    const restSnapshot = await getDocs(collection(db, "restaurants"));
+    if (!restSnapshot.empty) {
+      var loadedRestaurants = [];
+      restSnapshot.forEach(doc => {
+        loadedRestaurants.push({ id: doc.id, ...doc.data() });
+      });
+      restaurants = loadedRestaurants;
+      renderRestaurants(restaurants);
+    }
+
+    // 2. Fetch remote movies collection
+    const movieSnapshot = await getDocs(collection(db, "movies"));
+    if (!movieSnapshot.empty) {
+      var loadedMovies = [];
+      movieSnapshot.forEach(doc => {
+        loadedMovies.push({ id: doc.id, ...doc.data() });
+      });
+      movies = loadedMovies;
+      renderMovies(movies);
+    }
+  } catch (err) {
+    console.warn("Firestore data initialization dropped, operating on local data constants instead.", err);
+  }
+}
+// ===============================================================
+
+
 // --------------- INIT ---------------
 
 function init() {
   renderRestaurants(restaurants);
   renderMovies(movies);
   renderTheaters();
+  // ===== CHANGED LINE Below =====
+  loadFirestoreCollections();
 }
 
 init();
+
+
+// ===== CHANGED SECTION: Global Module Window Scoping Declarations =====
+// Required to prevent DOM onclick bindings from throwing undefined references
+window.showHome = showHome;
+window.openApp = openApp;
+window.switchTab = switchTab;
+window.showLogin = showLogin;
+window.handleLogin = handleLogin;
+window.selectMood = selectMood;
+window.searchRestaurants = searchRestaurants;
+window.openMenu = openMenu;
+window.filterByCategory = filterByCategory;
+window.goBackToRestaurants = goBackToRestaurants;
+window.addToCart = addToCart;
+window.changeQty = changeQty;
+window.toggleCart = toggleCart;
+window.filterByLang = filterByLang;
+window.openSeatSelector = openSeatSelector;
+window.openSeatFromTheater = openSeatFromTheater;
+window.selectShowtime = selectShowtime;
+window.toggleSeat = toggleSeat;
+window.openPayment = openPayment;
+window.closePayment = closePayment;
+window.selectPayMethod = selectPayMethod;
+window.formatCard = formatCard;
+window.submitPayment = submitPayment;
+// Add this line to the bottom array mapping block of window setups inside app.js
+window.handleLogout = handleLogout;
+// ===============================================================
