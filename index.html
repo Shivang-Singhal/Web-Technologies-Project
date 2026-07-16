@@ -16,8 +16,8 @@
       <button id="nav-home"   class="nav-btn active" onclick="showHome()">Home</button>
       <button id="nav-food"   class="nav-btn"        onclick="openApp('food')">Food</button>
       <button id="nav-movies" class="nav-btn"        onclick="openApp('movies')">Movies</button>
-      <!-- ADD THIS LINE BELOW -->
-    <button id="nav-profile" class="nav-btn"       onclick="showLogin()">👤 Profile</button>
+      <!-- Optimized navigation pointer to keep tracking and routing state secure -->
+      <button id="nav-profile" class="nav-btn"       onclick="openApp('profile')">👤 Profile</button>
     </div>
 
     <div class="city-tag">📍 Greater Noida</div>
@@ -91,44 +91,68 @@
     </div>
 
   </div>
-<!-- ========== LOGIN / PROFILE PAGE ========== -->
-<div id="login-section" class="hidden">
-  <div class="login-container">
-    
-    <!-- Case A: User is a Guest (Logged Out) -->
-    <div id="auth-logged-out">
-      <h2>👤 Welcome to Fork & Film</h2>
-      <p>Log in or instantly register to manage bookings and track food orders.</p>
-      
-      <form id="login-form" onsubmit="handleLogin(event)">
-        <div class="form-field">
-          <label class="form-label">Email Address</label>
-          <input type="email" class="form-input" placeholder="name@example.com" required />
-        </div>
-        <div class="form-field">
-          <label class="form-label">Password</label>
-          <input type="password" class="form-input" placeholder="••••••••" required />
-        </div>
-        <!-- Updated text to imply it handles both login and instant signup -->
-        <button type="submit" class="pay-now-btn">Log In / Sign Up</button>
-      </form>
-    </div>
 
-    <!-- Case B: User is Logged In (Profile View) -->
-    <div id="auth-logged-in" class="hidden">
-      <h2>🎉 Account Dashboard</h2>
-      <p>You are successfully authenticated via Firebase securely.</p>
+  <!-- ========== LOGIN / PROFILE PAGE (OPTIMIZED) ========== -->
+  <div id="login-section" class="hidden">
+    <div class="login-container">
       
-      <div style="background: #f0f4ff; padding: 16px; border-radius: 8px; margin: 20px 0; border: 1px solid #d0e0ff; text-align: left;">
-        <div style="font-weight: 700; color: #333;">Current Session User:</div>
-        <div id="profile-email-display" style="color: #555; font-family: monospace; margin-top: 4px; word-break: break-all;">loading...</div>
+      <!-- Case A: User is a Guest (Logged Out / Sign Up mode) -->
+      <div id="auth-logged-out">
+        <h2 id="auth-form-title">👤 Welcome to Fork & Film</h2>
+        <p id="auth-form-desc">Log in or instantly register to manage bookings and track food orders.</p>
+        
+        <form id="login-form" onsubmit="handleAuthSubmit(event)">
+          <!-- Name Field (Only visible during signup) -->
+          <div class="form-field hidden" id="name-field">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="auth-name" class="form-input" placeholder="Your Name" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="auth-email" class="form-input" placeholder="name@example.com" required />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">Password</label>
+            <input type="password" id="auth-password" class="form-input" placeholder="••••••••" required />
+          </div>
+
+          <button type="submit" id="auth-submit-btn" class="pay-now-btn">Log In</button>
+        </form>
+
+        <!-- Seamless Auth State Switcher -->
+        <p style="margin-top: 18px; font-size: 14px; text-align: center; color: #666;">
+          <span id="auth-toggle-label">Don't have an account? </span>
+          <a href="#" id="toggle-auth-btn" onclick="toggleAuthMode(event)" style="color: #ff4d4d; font-weight: 700; text-decoration: none;">Sign Up</a>
+        </p>
       </div>
 
-      <button onclick="handleLogout()" class="pay-now-btn" style="background: #ff4d4d;">Log Out</button>
-    </div>
+      <!-- Case B: User is Logged In (Profile View / Dashboard) -->
+      <div id="auth-logged-in" class="hidden">
+        <h2>🎉 Account Dashboard</h2>
+        <p>You are successfully authenticated via Firebase securely.</p>
+        
+        <div style="background: #f0f4ff; padding: 20px; border-radius: 12px; margin: 20px 0; border: 1px solid #d0e0ff; text-align: left; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <div style="font-weight: 700; color: #4b5563; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Display Name</div>
+            <div id="profile-name-display" style="color: #1f2937; font-size: 16px; font-weight: 600; margin-top: 2px;">Loading...</div>
+          </div>
+          <div>
+            <div style="font-weight: 700; color: #4b5563; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Registered Email</div>
+            <div id="profile-email-display" style="color: #4b5563; font-family: monospace; font-size: 14px; margin-top: 2px; word-break: break-all;">Loading...</div>
+          </div>
+          <div>
+            <div style="font-weight: 700; color: #4b5563; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Firebase Unique ID (UID)</div>
+            <div id="profile-uid-display" style="color: #9ca3af; font-family: monospace; font-size: 11px; margin-top: 2px; word-break: break-all;">Loading...</div>
+          </div>
+        </div>
 
+        <button onclick="handleLogout()" class="pay-now-btn" style="background: #ff4d4d; border: none; cursor: pointer;">Log Out</button>
+      </div>
+
+    </div>
   </div>
-</div>
 
   <!-- ========== APP SECTION ========== -->
   <div id="app-section" class="hidden">
@@ -253,10 +277,10 @@
 
         <div class="pay-method-label">Choose payment method</div>
         <div class="pay-methods-row">
-          <div class="pay-method-btn active" data-method="card"       onclick="selectPayMethod(this)"><span class="pm-icon">💳</span><span class="pm-lbl">Card</span></div>
-          <div class="pay-method-btn"        data-method="upi"        onclick="selectPayMethod(this)"><span class="pm-icon">📱</span><span class="pm-lbl">UPI</span></div>
+          <div class="pay-method-btn active" data-method="card"        onclick="selectPayMethod(this)"><span class="pm-icon">💳</span><span class="pm-lbl">Card</span></div>
+          <div class="pay-method-btn"        data-method="upi"         onclick="selectPayMethod(this)"><span class="pm-icon">📱</span><span class="pm-lbl">UPI</span></div>
           <div class="pay-method-btn"        data-method="netbanking" onclick="selectPayMethod(this)"><span class="pm-icon">🏦</span><span class="pm-lbl">Net Banking</span></div>
-          <div class="pay-method-btn"        data-method="cod"        onclick="selectPayMethod(this)"><span class="pm-icon">💵</span><span class="pm-lbl">Cash</span></div>
+          <div class="pay-method-btn"        data-method="cod"         onclick="selectPayMethod(this)"><span class="pm-icon">💵</span><span class="pm-lbl">Cash</span></div>
         </div>
 
         <div id="payment-fields">
@@ -295,7 +319,65 @@
     </div>
   </div>
 
-<!-- Load your app code as a module so we can import/export Firebase objects -->
+  <!-- Load your app code as a module so we can import/export Firebase objects -->
   <script type="module" src="app.js"></script>
+
+  <!-- ========== CLIENT AUTHENTICATION CONTROLLER ========== -->
+  <script>
+    let isSignUpMode = false;
+
+    // Toggle forms and titles seamlessly 
+    function toggleAuthMode(event) {
+      if (event) event.preventDefault();
+      isSignUpMode = !isSignUpMode;
+      
+      const nameField = document.getElementById('name-field');
+      const submitBtn = document.getElementById('auth-submit-btn');
+      const toggleLink = document.getElementById('toggle-auth-btn');
+      const formTitle = document.getElementById('auth-form-title');
+      const formDesc = document.getElementById('auth-form-desc');
+      const authToggleLabel = document.getElementById('auth-toggle-label');
+
+      if (isSignUpMode) {
+        nameField.classList.remove('hidden');
+        document.getElementById('auth-name').setAttribute('required', 'true');
+        formTitle.textContent = "👤 Create an Account";
+        formDesc.textContent = "Sign up today to keep your orders and movie tickets organized!";
+        submitBtn.textContent = "Register & Sign Up";
+        authToggleLabel.textContent = "Already have an account? ";
+        toggleLink.textContent = "Log In";
+      } else {
+        nameField.classList.add('hidden');
+        document.getElementById('auth-name').removeAttribute('required');
+        formTitle.textContent = "👤 Welcome to Fork & Film";
+        formDesc.textContent = "Log in or instantly register to manage bookings and track food orders.";
+        submitBtn.textContent = "Log In";
+        authToggleLabel.textContent = "Don't have an account? ";
+        toggleLink.textContent = "Sign Up";
+      }
+    }
+
+    // Process submission and direct variables securely to Firebase ESM Javascript Module
+    function handleAuthSubmit(event) {
+      event.preventDefault();
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+
+      if (isSignUpMode) {
+        const name = document.getElementById('auth-name').value;
+        if (typeof window.handleSignUp === 'function') {
+          window.handleSignUp(email, password, name);
+        } else {
+          console.error("Global handleSignUp target is undefined!");
+        }
+      } else {
+        if (typeof window.handleLogin === 'function') {
+          window.handleLogin(email, password);
+        } else {
+          console.error("Global handleLogin target is undefined!");
+        }
+      }
+    }
+  </script>
 </body>
 </html>
