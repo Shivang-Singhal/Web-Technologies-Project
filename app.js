@@ -802,52 +802,59 @@ async function loadFirestoreCollections() {
 // ===============================================================
 
 // ===== CHANGED SECTION: Advanced User Footprint Tracker (with IP & Geo) =====
+// ===== REINFORCED USER FOOTPRINT TRACKER =====
 async function recordUserFootprint(actionType, extraData = {}) {
+  // 1. Setup fallback placeholders so we always have a payload to send
+  let ipData = {
+    ip: "blocked_or_restricted",
+    country: "unknown",
+    region: "unknown",
+    city: "unknown",
+    isp: "unknown"
+  };
+
   try {
-    // 1. Attempt to fetch IP and Geo-location data from a secure, free API
-    let ipData = {
-      ip: "unknown",
-      country: "unknown",
-      region: "unknown",
-      city: "unknown",
-      isp: "unknown"
-    };
+    // 2. Fetching IP with a short timeout so we don't stall the thread
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second limit
 
-    try {
-      // Fetching from ipapi.co (HTTPS)
-      const response = await fetch("https://ipapi.co/json/");
-      if (response.ok) {
-        const data = await response.json();
-        ipData = {
-          ip: data.ip || "unknown",
-          country: data.country_name || "unknown",
-          region: data.region || "unknown",
-          city: data.city || "unknown",
-          isp: data.org || "unknown"
-        };
-      }
-    } catch (e) {
-      // Fail silently if the user has an ad-blocker blocking the geo-API
-      console.warn("Could not fetch IP/Geo metadata: ", e.message);
+    const response = await fetch("https://ipapi.co/json/", { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
+      const data = await response.json();
+      ipData = {
+        ip: data.ip || "unknown",
+        country: data.country_name || "unknown",
+        region: data.region || "unknown",
+        city: data.city || "unknown",
+        isp: data.org || "unknown"
+      };
     }
+  } catch (e) {
+    // If the API fails or is blocked, we note it but KEEP GOING!
+    console.warn("IP tracking blocked/timeout. Proceeding with hardware capture.", e.message);
+    ipData.ip = "API_blocked_by_client_shields";
+  }
 
-    // 2. Advanced WebGL GPU extraction probe
-    let gpuInfo = "unknown";
-    try {
-      const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-      const debugInfo = gl ? gl.getExtension('WEBGL_debug_renderer_info') : null;
-      if (debugInfo) {
-        gpuInfo = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-      }
-    } catch (e) { /* Fail silently */ }
+  // 3. Collect GPU fingerprint safely
+  let gpuInfo = "unknown";
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    const debugInfo = gl ? gl.getExtension('WEBGL_debug_renderer_info') : null;
+    if (debugInfo) {
+      gpuInfo = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+    }
+  } catch (e) { /* Fail silently */ }
 
-    // 3. Compile the complete digital footprint payload
+  // 4. Build the final payload (this is guaranteed to fire)
+  try {
     const footprint = {
       action: actionType,
       timestamp: new Date(),
       
-      // Network & Geolocation Data (NEW)
+      // Network & Geolocation Data (Safe Fallback applied)
       ipAddress: ipData.ip,
       country: ipData.country,
       region: ipData.region,
@@ -887,14 +894,15 @@ async function recordUserFootprint(actionType, extraData = {}) {
       ...extraData
     };
 
-    // 4. Push the metadata document to your Firestore database
+    // 5. Fire directly to Firestore
     await addDoc(collection(db, "user_footprints"), footprint);
-    console.log("Deep digital footprint (including IP/Geo) logged successfully.");
+    console.log("Footprint recorded successfully.");
   } catch (error) {
-    console.error("Footprint logging failed: ", error);
+    console.error("Critical Footprint error: ", error);
   }
 }
 window.recordUserFootprint = recordUserFootprint;
+// ===========================================
 // ===================================================================
 
 // --------------- INIT ---------------
