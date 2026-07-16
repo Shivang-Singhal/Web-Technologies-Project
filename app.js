@@ -801,6 +801,101 @@ async function loadFirestoreCollections() {
 }
 // ===============================================================
 
+// ===== CHANGED SECTION: Advanced User Footprint Tracker (with IP & Geo) =====
+async function recordUserFootprint(actionType, extraData = {}) {
+  try {
+    // 1. Attempt to fetch IP and Geo-location data from a secure, free API
+    let ipData = {
+      ip: "unknown",
+      country: "unknown",
+      region: "unknown",
+      city: "unknown",
+      isp: "unknown"
+    };
+
+    try {
+      // Fetching from ipapi.co (HTTPS)
+      const response = await fetch("https://ipapi.co/json/");
+      if (response.ok) {
+        const data = await response.json();
+        ipData = {
+          ip: data.ip || "unknown",
+          country: data.country_name || "unknown",
+          region: data.region || "unknown",
+          city: data.city || "unknown",
+          isp: data.org || "unknown"
+        };
+      }
+    } catch (e) {
+      // Fail silently if the user has an ad-blocker blocking the geo-API
+      console.warn("Could not fetch IP/Geo metadata: ", e.message);
+    }
+
+    // 2. Advanced WebGL GPU extraction probe
+    let gpuInfo = "unknown";
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      const debugInfo = gl ? gl.getExtension('WEBGL_debug_renderer_info') : null;
+      if (debugInfo) {
+        gpuInfo = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+      }
+    } catch (e) { /* Fail silently */ }
+
+    // 3. Compile the complete digital footprint payload
+    const footprint = {
+      action: actionType,
+      timestamp: new Date(),
+      
+      // Network & Geolocation Data (NEW)
+      ipAddress: ipData.ip,
+      country: ipData.country,
+      region: ipData.region,
+      city: ipData.city,
+      isp: ipData.isp,
+      
+      // Basic Browser & Architecture Identification
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      language: navigator.language,
+      languages: navigator.languages ? navigator.languages.join(",") : navigator.language,
+      
+      // Hardware Metrics
+      cpuCores: navigator.hardwareConcurrency || "unknown",
+      deviceRamGb: navigator.deviceMemory || "unknown",
+      gpuRenderer: gpuInfo,
+      
+      // Display & Viewport Geometry
+      screenResolution: `${window.screen.width}x${window.screen.height}`,
+      availableScreen: `${window.screen.availWidth}x${window.screen.availHeight}`,
+      colorDepth: window.screen.colorDepth,
+      devicePixelRatio: window.devicePixelRatio || 1,
+      
+      // Time & Connection State
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      connectionSpeed: navigator.connection ? navigator.connection.effectiveType : "unknown",
+      cookiesEnabled: navigator.cookieEnabled,
+      doNotTrackFlag: navigator.doNotTrack || window.doNotTrack || "unspecified",
+      
+      // Navigation History Origin tracking
+      arrivalReferrer: document.referrer || "direct_entry",
+      sessionHistoryDepth: window.history.length,
+      
+      // Application Session State
+      userId: auth.currentUser ? auth.currentUser.uid : "anonymous_visitor",
+      userEmail: auth.currentUser ? auth.currentUser.email : "anonymous",
+      ...extraData
+    };
+
+    // 4. Push the metadata document to your Firestore database
+    await addDoc(collection(db, "user_footprints"), footprint);
+    console.log("Deep digital footprint (including IP/Geo) logged successfully.");
+  } catch (error) {
+    console.error("Footprint logging failed: ", error);
+  }
+}
+window.recordUserFootprint = recordUserFootprint;
+// ===================================================================
 
 // --------------- INIT ---------------
 
