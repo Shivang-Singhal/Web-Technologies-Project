@@ -16,7 +16,10 @@ import {
   addDoc, 
   getDocs, 
   query, 
-  where 
+  where,
+  orderBy,   // Added for sorting live footprints by timestamp
+  limit,     // Added to throttle display to the latest 20 actions
+  onSnapshot // Added for WebSocket real-time live-updating feed
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // FIREBASE CONSOLE CONFIG KEYS
@@ -201,6 +204,7 @@ function searchRestaurants(query) {
   renderRestaurants(filtered);
 }
 
+// Intercept clicks to capture digital footprints dynamically
 function openMenu(restId) {
   currentRest = null;
   for (var i = 0; i < restaurants.length; i++) {
@@ -218,6 +222,9 @@ function openMenu(restId) {
 
   buildCategoryFilters(menuData[restId]);
   renderMenuItems(menuData[restId]);
+
+  // Capture navigation metrics
+  recordUserFootprint("view_menu", { restaurantId: restId, restaurantName: currentRest.name });
 }
 
 function buildCategoryFilters(items) {
@@ -285,6 +292,9 @@ function addToCart(id, name, emoji, price) {
   }
   refreshCart();
   showToast(emoji + " " + name + " added!");
+
+  // Track item configuration metrics
+  recordUserFootprint("add_to_cart", { itemId: id, itemName: name, price: price });
 }
 
 function changeQty(id, delta) {
@@ -343,6 +353,9 @@ function selectMood(el) {
   el.classList.add("selected");
   var mood = el.getAttribute("data-mood");
   showMoodResults(mood);
+
+  // Track micro-interaction selection metrics
+  recordUserFootprint("mood_recommender_query", { selectedMood: mood });
 }
 
 function showMoodResults(mood) {
@@ -458,6 +471,9 @@ function openSeatSelector(movieId, theaterId) {
 
   buildShowtimeTabs();
   buildSeatGrid();
+
+  // Track movie selection metrics
+  recordUserFootprint("configure_seats", { movieId: movieId, movieTitle: currentMovie.title });
 }
 
 function openSeatFromTheater(theaterId) {
@@ -660,6 +676,13 @@ async function submitPayment() {
     document.getElementById("success-section").classList.add("visible");
     document.getElementById("booking-ref").textContent = "Booking Ref: " + bookingId;
 
+    // Dispatch telemetry data on purchase success
+    recordUserFootprint("checkout_completed", { 
+      checkoutType: payMode, 
+      reference: bookingId, 
+      pricePaid: summaryText.split('Total')[1]?.trim() || "calculated" 
+    });
+
     if (payMode === "food") {
       document.getElementById("success-title").textContent = "Order Confirmed! 🎉";
       document.getElementById("success-msg").textContent   = "Your food is being prepared. Estimated delivery: 35–45 min.";
@@ -718,6 +741,9 @@ onAuthStateChanged(auth, (user) => {
     console.log("Auth state verified: User is logged in", user.email);
     // Explicitly record user footprints with fresh state context
     recordUserFootprint("session_restore", { trigger: "auth_state_changed" });
+    
+    // Automatically trigger real-time digital footprints collection stream once authorized
+    initLiveFootprintStream();
   } else {
     console.log("Auth state verified: No user logged in");
   }
@@ -752,6 +778,9 @@ async function handleSignUp(email, password, fullName) {
 
     console.log("Successfully registered and saved name:", fullName);
     showToast("Registration successful! Welcome!");
+    
+    // Record explicit telemetry log
+    recordUserFootprint("auth_register_success", { userEmail: email });
     showHome();
   } catch (error) {
     console.error("Registration failed:", error);
@@ -765,6 +794,9 @@ async function handleLogin(email, password) {
     updateProfileUI(userCredential.user);
     console.log("Logged in successfully!");
     showToast("Logged in successfully!");
+    
+    // Record login metric tracking footprint
+    recordUserFootprint("auth_login_success", { userEmail: email });
     showHome();
   } catch (error) {
     console.error("Login failed:", error);
@@ -774,6 +806,9 @@ async function handleLogin(email, password) {
 
 async function handleLogout() {
   try {
+    // Save state metric trace log before dismantling auth session
+    await recordUserFootprint("auth_logout_intent");
+    
     await signOut(auth);
     showToast("Logged out successfully!");
     showHome();
@@ -917,6 +952,86 @@ async function recordUserFootprint(actionType, extraData = {}) {
 }
 
 
+// ===== LIVE FOOTPRINT STREAMING & UI TOGGLE FUNCTIONS =====
+
+function initLiveFootprintStream() {
+  const feedContainer = document.getElementById("footprints-feed");
+  if (!feedContainer) return;
+
+  // Query the latest 20 footprints ordered by time
+  const footprintsQuery = query(
+    collection(db, "user_footprints"),
+    orderBy("timestamp", "desc"),
+    limit(20)
+  );
+
+  // Establish active real-time socket listener
+  onSnapshot(footprintsQuery, (snapshot) => {
+    if (snapshot.empty) {
+      feedContainer.innerHTML = `<div class="empty-feed">No footprints recorded yet.</div>`;
+      return;
+    }
+
+    feedContainer.innerHTML = ""; // Clear loader/previous list
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      const timeString = data.timestamp?.toDate() 
+        ? data.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        : "Just now";
+
+      const card = document.createElement("div");
+      card.className = "footprint-card";
+      card.innerHTML = `
+        <div class="fp-header" onclick="toggleCardDetails(this)">
+          <div class="fp-title-row">
+            <span class="fp-action-badge action-${data.action}">${data.action.replace('_', ' ')}</span>
+            <span class="fp-time">${timeString}</span>
+          </div>
+          <div class="fp-meta-row">
+            <span>📍 ${data.city || 'Unknown City'}, ${data.region || 'UP'}</span>
+            <span class="fp-chevron">▼</span>
+          </div>
+        </div>
+        <div class="fp-details hidden">
+          <div class="fp-grid">
+            <div><strong>User ID:</strong> <span class="fp-mono">${data.userId}</span></div>
+            <div><strong>Email:</strong> ${data.userEmail}</div>
+            <div><strong>IP Address:</strong> <span class="fp-mono">${data.ipAddress}</span></div>
+            <div><strong>ISP:</strong> ${data.isp}</div>
+            <div><strong>Browser:</strong> ${data.userAgent.split(' ')[0]}</div>
+            <div><strong>OS / Platform:</strong> ${data.platform}</div>
+            <div><strong>GPU Renderer:</strong> <span style="font-size:11px; color:#555;">${data.gpuRenderer || 'N/A'}</span></div>
+            <div><strong>CPU Cores:</strong> ${data.cpuCores || 'N/A'} Core(s)</div>
+            <div><strong>RAM Class:</strong> ${data.deviceRamGb || 'N/A'} GB</div>
+            <div><strong>Resolution:</strong> ${data.screenResolution} (@${data.devicePixelRatio}x)</div>
+            <div><strong>TimeZone:</strong> ${data.timeZone}</div>
+            <div><strong>Speed Class:</strong> ${data.connectionSpeed || 'Unknown'}</div>
+          </div>
+        </div>
+      `;
+      feedContainer.appendChild(card);
+    });
+  });
+}
+
+function toggleCardDetails(headerElement) {
+  const card = headerElement.parentElement;
+  const details = card.querySelector(".fp-details");
+  const chevron = card.querySelector(".fp-chevron");
+  
+  const isOpen = !details.classList.contains("hidden");
+  
+  if (isOpen) {
+    details.classList.add("hidden");
+    chevron.style.transform = "rotate(0deg)";
+  } else {
+    details.classList.remove("hidden");
+    chevron.style.transform = "rotate(180deg)";
+  }
+}
+
+
 // --------------- INITIALIZATION ---------------
 
 function init() {
@@ -956,6 +1071,10 @@ window.selectPayMethod = selectPayMethod;
 window.formatCard = formatCard;
 window.submitPayment = submitPayment;
 window.recordUserFootprint = recordUserFootprint;
+
+// Expose Stream controls globally for direct execution context
+window.initLiveFootprintStream = initLiveFootprintStream;
+window.toggleCardDetails = toggleCardDetails;
 
 
 // ===== DELAYED AUTORUN TRACKER TRIPS =====
