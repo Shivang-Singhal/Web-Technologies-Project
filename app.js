@@ -1,6 +1,6 @@
 // Fork & Film — Main JavaScript
 
-// ===== CHANGED SECTION: Firebase Imports & Initialization =====
+// ===== FIREBASE IMPORTS & INITIALIZATION =====
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
   getAuth, 
@@ -8,7 +8,7 @@ import {
   signInWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
-  updateProfile // <--- Add this exact line to your imports
+  updateProfile 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
   getFirestore, 
@@ -19,7 +19,7 @@ import {
   where 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// REPLACE THESE PLACEHOLDERS WITH YOUR FIREBASE CONSOLE CONFIG KEYS
+// FIREBASE CONSOLE CONFIG KEYS
 const firebaseConfig = {
     apiKey: "AIzaSyCzPFub8qvbteH24mZCVc56Xn9HmQMlQP0",
     authDomain: "trial-48d80.firebaseapp.com",
@@ -28,12 +28,11 @@ const firebaseConfig = {
     messagingSenderId: "210173220561",
     appId: "1:210173220561:web:dafb9e18d5dfd2c0fc57f0",
     measurementId: "G-F9DQDFC9J6"
-  };
+};
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-// ===============================================================
 
 
 // --------------- DATA ---------------
@@ -124,7 +123,6 @@ var payMode        = null;
 function showHome() {
   document.getElementById("home-section").classList.remove("hidden");
   document.getElementById("app-section").classList.add("hidden");
-  // ===== CHANGED LINE Below =====
   document.getElementById('login-section').classList.add('hidden');
   setNavActive("home");
 }
@@ -132,7 +130,6 @@ function showHome() {
 function openApp(tab) {
   document.getElementById("home-section").classList.add("hidden");
   document.getElementById("app-section").classList.remove("hidden");
-  // ===== CHANGED LINE Below =====
   document.getElementById('login-section').classList.add('hidden');
   switchTab(tab);
   setNavActive(tab);
@@ -147,7 +144,6 @@ function setNavActive(tab) {
     document.getElementById("nav-food").classList.add("active");
   } else if (tab === "movies") {
     document.getElementById("nav-movies").classList.add("active");
-  // ===== CHANGED LINE Below =====
   } else if (tab === "profile") {
     document.getElementById("nav-profile").classList.add("active");
   }
@@ -617,20 +613,17 @@ function formatCard(input) {
   input.value = val.substring(0, 19);
 }
 
-// ===== CHANGED SECTION: Firebase Dynamic Booking Submissions =====
+// ===== FIREBASE BOOKING SYSTEM =====
 async function submitPayment() {
   var btn = document.querySelector(".pay-now-btn");
   btn.textContent = "Processing...";
   btn.disabled = true;
 
-  var orderTotal = 0;
   var summaryText = document.getElementById("order-summary-content").innerText;
 
   try {
-    // Generate an order reference key
     var bookingId = "FF-" + Math.random().toString(36).toUpperCase().slice(2, 10);
     
-    // Construct database snapshot structural payload
     var transactionData = {
       bookingRef: bookingId,
       type: payMode,
@@ -649,10 +642,8 @@ async function submitPayment() {
       transactionData.seatsBooked = selectedSeats;
     }
 
-    // Push transaction structure up to Firestore 'bookings' collection
     await addDoc(collection(db, "bookings"), transactionData);
 
-    // Update frontend view states matching the original logic
     document.getElementById("pay-form-section").style.display = "none";
     document.getElementById("success-section").classList.add("visible");
     document.getElementById("booking-ref").textContent = "Booking Ref: " + bookingId;
@@ -676,10 +667,9 @@ async function submitPayment() {
     btn.disabled = false;
   }
 }
-// ===============================================================
 
-// ===== CHANGED SECTION: Firebase Real-time Authentication State Listener =====
-// ===== CHANGED SECTION: Updated Auth State Listener with Profile Toggle =====
+
+// ===== FIREBASE AUTH STATE LISTENER =====
 onAuthStateChanged(auth, (user) => {
   var profileBtn = document.getElementById('nav-profile');
   var loggedOutView = document.getElementById('auth-logged-out');
@@ -687,20 +677,14 @@ onAuthStateChanged(auth, (user) => {
   var emailDisplay = document.getElementById('profile-email-display');
 
   if (user) {
-    // 1. Update Navigation text to user handle
-    if (profileBtn) profileBtn.innerHTML = `👤 ${user.email.split('@')[0]}`;
-    
-    // 2. Toggle Account view panels
+    if (profileBtn) profileBtn.innerHTML = `👤 ${user.displayName || user.email.split('@')[0]}`;
     if (loggedOutView) loggedOutView.classList.add('hidden');
     if (loggedInView) {
       loggedInView.classList.remove('hidden');
       if (emailDisplay) emailDisplay.textContent = user.email;
     }
   } else {
-    // 1. Reset Navigation text to default
     if (profileBtn) profileBtn.innerHTML = "👤 Profile";
-    
-    // 2. Reset back to the Login form panel
     if (loggedOutView) loggedOutView.classList.remove('hidden');
     if (loggedInView) {
       loggedInView.classList.add('hidden');
@@ -708,68 +692,74 @@ onAuthStateChanged(auth, (user) => {
     }
   }
 });
-// ============================================================================
-// ===============================================================
 
-// Function to display the Login Section
 function showLogin() {
   document.getElementById('home-section').classList.add('hidden');
   document.getElementById('app-section').classList.add('hidden');
   document.getElementById('login-section').classList.remove('hidden');
 
   document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-  // ===== CHANGED LINE Below =====
   setNavActive("profile");
 }
 
-// ===== CHANGED SECTION: Firebase Dynamic Email/Password Authentication Validation =====
-// Locate your signup function—it will look similar to this:
+// ===== FIREBASE REGISTRATION & LOGOUT VALIDATIONS =====
 async function handleSignUp(email, password, fullName) { 
   try {
-    // 1. This creates the user account in Firebase
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // 2. ADD THIS BLOCK: Save their real name to their new profile
     await updateProfile(user, {
       displayName: fullName
     });
 
     console.log("Successfully registered and saved name:", fullName);
-    
+    showToast("Registration successful! Welcome!");
+    showHome();
   } catch (error) {
     console.error("Registration failed:", error);
+    alert("Registration failed: " + error.message);
   }
 }
-// ===== CHANGED SECTION: Logout Handler =====
+
+async function handleLogin(email, password) {
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    console.log("Logged in successfully!");
+    showToast("Logged in successfully!");
+    showHome();
+  } catch (error) {
+    console.error("Login failed:", error);
+    alert("Login failed: " + error.message);
+  }
+}
+
 async function handleLogout() {
   try {
     await signOut(auth);
     showToast("Logged out successfully!");
-    showHome(); // Send them back to the welcome landing board safely
+    showHome();
   } catch (error) {
     console.error("Authentication separation failed: ", error);
     alert("Could not process user log out context safely.");
   }
 }
-// ===========================================
-// ===============================================================
 
 
 // --------------- TOAST ---------------
 
 function showToast(msg) {
   var t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  setTimeout(function() { t.classList.remove("show"); }, 2200);
+  if (t) {
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(function() { t.classList.remove("show"); }, 2200);
+  }
 }
 
 
-// ===== CHANGED SECTION: Firestore Remote Database Collection Initializers =====
+// ===== FIRESTORE REALTIME COLLECTIONS =====
 async function loadFirestoreCollections() {
   try {
-    // 1. Fetch remote restaurants collection
     const restSnapshot = await getDocs(collection(db, "restaurants"));
     if (!restSnapshot.empty) {
       var loadedRestaurants = [];
@@ -780,7 +770,6 @@ async function loadFirestoreCollections() {
       renderRestaurants(restaurants);
     }
 
-    // 2. Fetch remote movies collection
     const movieSnapshot = await getDocs(collection(db, "movies"));
     if (!movieSnapshot.empty) {
       var loadedMovies = [];
@@ -794,13 +783,10 @@ async function loadFirestoreCollections() {
     console.warn("Firestore data initialization dropped, operating on local data constants instead.", err);
   }
 }
-// ===============================================================
 
-// ===== CHANGED SECTION: Advanced User Footprint Tracker (with IP & Geo) =====
-// ===== REINFORCED USER FOOTPRINT TRACKER =====
-// ===== REINFORCED USER FOOTPRINT TRACKER =====
+
+// ===== REINFORCED GEOLOCATION USER FOOTPRINT TRACKER =====
 async function recordUserFootprint(actionType, extraData = {}) {
-  // 1. Setup fallback placeholders so we always have a payload to send
   let ipData = {
     ip: "blocked_or_restricted",
     country: "unknown",
@@ -810,9 +796,8 @@ async function recordUserFootprint(actionType, extraData = {}) {
   };
 
   try {
-    // 2. Fetching IP with a short timeout so we don't stall the thread
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second limit
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
 
     const response = await fetch("https://ipapi.co/json/", { signal: controller.signal });
     clearTimeout(timeoutId);
@@ -828,12 +813,10 @@ async function recordUserFootprint(actionType, extraData = {}) {
       };
     }
   } catch (e) {
-    // If the API fails or is blocked, we note it but KEEP GOING!
     console.warn("IP tracking blocked/timeout. Proceeding with hardware capture.", e.message);
     ipData.ip = "API_blocked_by_client_shields";
   }
 
-  // 3. Collect GPU fingerprint safely
   let gpuInfo = "unknown";
   try {
     const canvas = document.createElement('canvas');
@@ -844,68 +827,54 @@ async function recordUserFootprint(actionType, extraData = {}) {
     }
   } catch (e) { /* Fail silently */ }
 
-  // 4. Build the final payload (this is guaranteed to fire)
   try {
     const footprint = {
       action: actionType,
       timestamp: new Date(),
       
-      // Network & Geolocation Data (Safe Fallback applied)
       ipAddress: ipData.ip,
       country: ipData.country,
       region: ipData.region,
       city: ipData.city,
       isp: ipData.isp,
       
-      // Basic Browser & Architecture Identification
       userAgent: navigator.userAgent,
       platform: navigator.platform,
       language: navigator.language,
       languages: navigator.languages ? navigator.languages.join(",") : navigator.language,
       
-      // Hardware Metrics
       cpuCores: navigator.hardwareConcurrency || "unknown",
       deviceRamGb: navigator.deviceMemory || "unknown",
       gpuRenderer: gpuInfo,
       
-      // Display & Viewport Geometry
       screenResolution: `${window.screen.width}x${window.screen.height}`,
       availableScreen: `${window.screen.availWidth}x${window.screen.availHeight}`,
       colorDepth: window.screen.colorDepth,
       devicePixelRatio: window.devicePixelRatio || 1,
       
-      // Time & Connection State
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       connectionSpeed: navigator.connection ? navigator.connection.effectiveType : "unknown",
       cookiesEnabled: navigator.cookieEnabled,
       doNotTrackFlag: navigator.doNotTrack || window.doNotTrack || "unspecified",
       
-      // Navigation History Origin tracking
       arrivalReferrer: document.referrer || "direct_entry",
       sessionHistoryDepth: window.history.length,
       
-      // ... [rest of your recordUserFootprint code remains exactly the same] ...
-
-      // Application Session State (UPDATED to capture User Name)
       userId: auth.currentUser ? auth.currentUser.uid : "anonymous_visitor",
       userEmail: auth.currentUser ? auth.currentUser.email : "anonymous",
       userName: auth.currentUser ? (auth.currentUser.displayName || auth.currentUser.email.split('@')[0]) : "Guest User",
       ...extraData
     };
 
-    // 5. Fire directly to Firestore
     await addDoc(collection(db, "user_footprints"), footprint);
     console.log("Footprint recorded successfully.");
   } catch (error) {
     console.error("Critical Footprint error: ", error);
   }
 }
-window.recordUserFootprint = recordUserFootprint;
-// ===========================================
-// ===========================================
-// ===================================================================
 
-// --------------- INIT ---------------
+
+// --------------- INITIALIZATION ---------------
 
 function init() {
   renderRestaurants(restaurants);
@@ -914,16 +883,17 @@ function init() {
   loadFirestoreCollections();
 }
 
-init(); // Let this run normally
+init();
 
 
-// ===== CHANGED SECTION: Global Module Window Scoping Declarations =====
-// Required to prevent DOM onclick bindings from throwing undefined references
+// ===== GLOBAL WINDOW MODULE BINDINGS =====
 window.showHome = showHome;
 window.openApp = openApp;
 window.switchTab = switchTab;
 window.showLogin = showLogin;
 window.handleLogin = handleLogin;
+window.handleSignUp = handleSignUp;
+window.handleLogout = handleLogout;
 window.selectMood = selectMood;
 window.searchRestaurants = searchRestaurants;
 window.openMenu = openMenu;
@@ -942,17 +912,11 @@ window.closePayment = closePayment;
 window.selectPayMethod = selectPayMethod;
 window.formatCard = formatCard;
 window.submitPayment = submitPayment;
-// Add this line to the bottom array mapping block of window setups inside app.js
-window.handleLogout = handleLogout;
-// ===============================================================
-// ===== CHANGED SECTION: Absolute Bottom of app.js =====
-
-// 1. First, ensure the function is globally bound
 window.recordUserFootprint = recordUserFootprint;
 
-// 2. Wait for the entire window and all resources to fully load
+
+// ===== DELAYED AUTORUN TRACKER TRIPS =====
 window.addEventListener('load', () => {
-  // 3. Give Firebase a brief 1.5-second window to finish its secure connection handshake
   setTimeout(() => {
     if (typeof window.recordUserFootprint === "function") {
       window.recordUserFootprint("page_visit")
@@ -963,4 +927,3 @@ window.addEventListener('load', () => {
     }
   }, 1500);
 });
-// =======================================================
