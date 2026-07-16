@@ -4,10 +4,11 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
   getAuth, 
-  signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
-  onAuthStateChanged, 
-  signOut 
+  signInWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged,
+  updateProfile // <--- Add this exact line to your imports
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
   getFirestore, 
@@ -889,9 +890,12 @@ async function recordUserFootprint(actionType, extraData = {}) {
       arrivalReferrer: document.referrer || "direct_entry",
       sessionHistoryDepth: window.history.length,
       
-      // Application Session State
+      // ... [rest of your recordUserFootprint code remains exactly the same] ...
+
+      // Application Session State (UPDATED to capture User Name)
       userId: auth.currentUser ? auth.currentUser.uid : "anonymous_visitor",
       userEmail: auth.currentUser ? auth.currentUser.email : "anonymous",
+      userName: auth.currentUser ? (auth.currentUser.displayName || auth.currentUser.email.split('@')[0]) : "Guest User",
       ...extraData
     };
 
