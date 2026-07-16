@@ -913,11 +913,10 @@ function init() {
   renderRestaurants(restaurants);
   renderMovies(movies);
   renderTheaters();
-  // ===== CHANGED LINE Below =====
   loadFirestoreCollections();
 }
 
-init();
+init(); // Let this run normally
 
 
 // ===== CHANGED SECTION: Global Module Window Scoping Declarations =====
@@ -948,3 +947,22 @@ window.submitPayment = submitPayment;
 // Add this line to the bottom array mapping block of window setups inside app.js
 window.handleLogout = handleLogout;
 // ===============================================================
+// ===== CHANGED SECTION: Absolute Bottom of app.js =====
+
+// 1. First, ensure the function is globally bound
+window.recordUserFootprint = recordUserFootprint;
+
+// 2. Wait for the entire window and all resources to fully load
+window.addEventListener('load', () => {
+  // 3. Give Firebase a brief 1.5-second window to finish its secure connection handshake
+  setTimeout(() => {
+    if (typeof window.recordUserFootprint === "function") {
+      window.recordUserFootprint("page_visit")
+        .then(() => console.log("Automatic page_visit tracked successfully!"))
+        .catch(err => console.error("Delayed automatic tracking failed:", err));
+    } else {
+      console.warn("recordUserFootprint was not found on the window object yet.");
+    }
+  }, 1500);
+});
+// =======================================================
