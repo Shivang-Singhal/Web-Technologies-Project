@@ -723,28 +723,22 @@ function showLogin() {
 }
 
 // ===== CHANGED SECTION: Firebase Dynamic Email/Password Authentication Validation =====
-async function handleLogin(event) {
-  event.preventDefault();
-  var email = event.target.querySelector('input[type="email"]').value;
-  var password = event.target.querySelector('input[type="password"]').value;
-
+// Locate your signup function—it will look similar to this:
+async function handleSignUp(email, password, fullName) { 
   try {
-    var userCredential = await signInWithEmailAndPassword(auth, email, password);
-    showToast(`Welcome ${userCredential.user.email}!`);
-    showHome();
+    // 1. This creates the user account in Firebase
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    // 2. ADD THIS BLOCK: Save their real name to their new profile
+    await updateProfile(user, {
+      displayName: fullName
+    });
+
+    console.log("Successfully registered and saved name:", fullName);
+    
   } catch (error) {
-    // If user record doesn't exist, try creating a new account instantly (Sign Up Fallback)
-    if (error.code === "auth/user-not-found" || error.code === "auth/invalid-credential") {
-      try {
-        var newCredential = await createUserWithEmailAndPassword(auth, email, password);
-        showToast("New Account Provisioned Successfully!");
-        showHome();
-      } catch (signUpError) {
-        alert("Authentication interface error: " + signUpError.message);
-      }
-    } else {
-      alert("Authentication failed: " + error.message);
-    }
+    console.error("Registration failed:", error);
   }
 }
 // ===== CHANGED SECTION: Logout Handler =====
